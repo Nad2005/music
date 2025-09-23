@@ -1,26 +1,19 @@
-# ---------- Build stage ----------
-    FROM node:20-alpine AS builder
-    WORKDIR /app
-    
-    # Install git
-    RUN apk add --no-cache git
-    
-    # Clone your frontend repo
-    RUN git clone https://github.com/Nad2005/music.git .
-    
-    # Install deps and build
-    RUN npm install
-    RUN npm run build
-    
-    # ---------- Run stage ----------
-    FROM nginx:alpine
-    WORKDIR /usr/share/nginx/html
-    
-    # Copy custom nginx.conf if exists
-    COPY --from=builder /app/nginx.conf /etc/nginx/conf.d/default.conf
-    
-    # Copy built files
-    COPY --from=builder /app/dist ./
-    EXPOSE 80
-    CMD ["nginx", "-g", "daemon off;"]
-    
+# Frontend Dockerfile
+FROM node:18-alpine AS build
+WORKDIR /app
+
+# Copy package.json and install deps
+COPY package*.json ./
+RUN npm install
+
+# Copy source code and build
+COPY . .
+RUN npm run build
+
+# Serve using a lightweight server (nginx)
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]   
